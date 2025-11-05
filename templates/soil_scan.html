@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>🌱 SoilGenie</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#eef7ee; text-align:center; padding:20px; }
+    .box { background:#fff; padding:20px; margin:auto; border-radius:10px; width:460px; box-shadow:0 4px 6px rgba(0,0,0,0.12); }
+    h1 { color:#2c662d; }
+    button { margin-top:10px; padding:10px 20px; border:none; border-radius:6px; background:#2c662d; color:#fff; cursor:pointer; }
+    button:hover { background:#1b441c; }
+    select, input { margin-top:10px; padding:8px; width:92%; border-radius:6px; border:1px solid #ccc; }
+    img { margin-top:15px; max-width:100%; border-radius:8px; }
+    .back { display:block; margin-top:20px; text-decoration:none; color:#2c662d; }
+    .lang-switch { margin-bottom:15px; text-align:left; }
+    label { font-weight:600; }
+    ul { text-align:left; display:inline-block; margin-top:10px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="lang-switch">
+      <label for="languageSelect">🌐 Language:</label>
+      <select id="languageSelect">
+        <option value="en">English</option>
+        <option value="kn">ಕನ್ನಡ</option>
+      </select>
+    </div>
+
+    <h1 id="title">🌱 SoilGenie</h1>
+    <p id="desc">Select soil type manually.</p>
+    <hr>
+
+    <form action="/manual_soil" method="post">
+      <label id="soil_label" for="soilSelect">Select Soil Type:</label><br>
+      <select name="soil_type" id="soilSelect" required>
+        <!-- options populated by JS -->
+      </select>
+      <input type="hidden" name="lang" id="lang_hidden">
+      <br>
+      <button type="submit" id="show_crops_btn">🌾 Show Crops</button>
+    </form>
+
+    <!-- placeholders: JS will populate these -->
+    <h3 id="predicted_label" style="display:none">Predicted Soil Type: <span id="predicted_soil"></span></h3>
+    <h4 id="suitable_label" style="display:none">🌾 Suitable Crops:</h4>
+    <ul id="crop_list"></ul>
+
+    {% if image_path %}
+      <img src="{{ image_path }}" alt="Uploaded soil image">
+    {% endif %}
+
+    <a href="/categories" class="back" id="back_btn">⬅ Back to Categories</a>
+  </div>
+
+  <script>
+    // --- translations + built-in crop lists ---
+    const translations = {
+      en: {
+        title: "🌱SoilGenie",
+        desc: "Select soil type manually.",
+        soil_label: "Select Soil Type:",
+        show_crops_btn: "🌾 Show Crops",
+        predicted_label: "Predicted Soil Type:",
+        suitable_label: "🌾 Suitable Crops:",
+        back_btn: "⬅ Back to Categories",
+        soils_display: ["--Choose Soil--","Laterite","Alluvial","Black","Red","Desert","Mountain","Green"],
+        crops_by_soil: {
+          Laterite: ["Coconut","Cashew","Tea","Coffee","Rubber","Pepper","Arecanut","Banana"],
+          Alluvial: ["Rice","Wheat","Sugarcane","Jute","Maize","Pulses","Mustard","Vegetables","Cotton"],
+          Black: ["Cotton","Soybean","Tobacco","Citrus","Sugarcane","Groundnut","Sunflower","Sorghum"],
+          Red: ["Millets","Groundnut","Pulses","Maize","Castor","Linseed","Rice","Fruits"],
+          Desert: ["Bajra","Cactus","Dates","Guar","Mustard","Moth Bean","Sesame"],
+          Mountain: ["Tea","Apples","Barley","Cardamom","Maize","Potato","Ginger","Walnut"],
+          Green: ["Vegetables","Fruits","Flowers","Herbs","Leafy greens","Spices"]
+        }
+      },
+      kn: {
+        title: "🌱ಮಣ್ಣಿನ ಜಿನಿ ",
+        desc: "ಮಣ್ಣಿನ ಪ್ರಕಾರವನ್ನು ಕೈಯಾರೆ ಆಯ್ಕೆಮಾಡಿ.",
+        soil_label: "ಮಣ್ಣಿನ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ:",
+        show_crops_btn: "🌾 ಬೆಳೆಗಳನ್ನು ತೋರಿಸಿ",
+        predicted_label: "ಅಂದಾಜು ಮಾಡಿದ ಮಣ್ಣಿನ ಪ್ರಕಾರ:",
+        suitable_label: "🌾 ಸೂಕ್ತ ಬೆಳೆಗಳು:",
+        back_btn: "⬅ ವಿಭಾಗಗಳಿಗೆ ಹಿಂತಿರುಗಿ",
+        soils_display: ["--ಮಣ್ಣಿನ ಆಯ್ಕೆ--","ಲ್ಯಾಟರೈಟ್ ಮಣ್ಣು","ಅಲ್ಯೂವಿಯಲ್ ಮಣ್ಣು","ಕರಿ ಮಣ್ಣು","ಕೆಂಪು ಮಣ್ಣು","ಮರಳು ಮಣ್ಣು","ಪರ್ವತ ಮಣ್ಣು","ಹಸಿರು ಮಣ್ಣು"],
+        crops_by_soil: {
+          Laterite: ["ತೆಂಗು","ಕಾಜು","ಚಹಾ","ಕಾಫಿ","ರಬ್ಬರ್","ಮೆಣಸು","ಅಡಿಕೆ","ಬಾಳೆಹಣ್ಣು"],
+          Alluvial: ["ಅಕ್ಕಿ","ಗೋಧಿ","ಕರಿಬೇವು","ಜ್ಯೂಟ್","ಮಕ್ಕಜೋಳ","ದಾಳೆಗಳು","ಸಾಸಿವೆ","ತರಕಾರಿಗಳು","ಹತ್ತಿ"],
+          Black: ["ಹತ್ತಿ","ಸೋಯಾಬೀನ್","ಟೊಬಾಕೊ","ಸಿಟ್ರಸ್","ಕರಿಬೇವು","ಶೇಂಗಾ","ಸೂರ್ಯಕಾಂತಿ","ಜೋಳ"],
+          Red: ["ಸಜ್ಜೆ","ಶೇಂಗಾ","ದಾಳೆಗಳು","ಮಕ್ಕಜೋಳ","ಕಾಸ್ಟರ್","ಅಗಲಸೀಡ್","ಅಕ್ಕಿ","ಹಣ್ಣುಗಳು"],
+          Desert: ["ಬಜ್ರಾ","ನಾಗಫಣಿ","ಖರ್ಜೂರ","ಗುವಾರ್","ಸಾಸಿವೆ","ಮೋತ್ ಬೀನ್ಸ್","ಎಳ್ಳು"],
+          Mountain: ["ಚಹಾ","ಸೇಬು","ಬಾರ್ಲಿ","ಏಲಕ್ಕಿ","ಮಕ್ಕಜೋಳ","ಅಲೂಗಡ್ಡೆ","ಶುಂಠಿ","ಒಲೆ"],
+          Green: ["ತರಕಾರಿಗಳು","ಹಣ್ಣುಗಳು","ಹೂಗಳು","ಔಷಧೀಯ ಸಸ್ಯಗಳು","ಸೊಪ್ಪುಗಳು","ಮಸಾಲೆಗಳು"]
+        }
+      }
+    };
+
+    // --- embed server data into JS (serverData) ---
+    const serverData = {
+      result: {% if result %}{{ result|tojson }}{% else %}null{% endif %},
+      crops: {% if crops %}{{ crops|tojson }}{% else %}null{% endif %}
+    };
+
+    // --- crop translation lookup (English -> Kannada) ---
+    const cropLookup = (function buildLookup() {
+      const lookup = {};
+      // Map built-in lists by index where possible
+      const en = translations.en.crops_by_soil;
+      const kn = translations.kn.crops_by_soil;
+      for (const soil in en) {
+        const elist = en[soil] || [];
+        const klist = kn[soil] || [];
+        for (let i = 0; i < elist.length; i++) {
+          const e = elist[i];
+          if (!lookup[e]) lookup[e] = klist[i] || null;
+        }
+      }
+      // Extra explicit pairs to increase coverage
+      Object.assign(lookup, {
+        "Rice":"ಅಕ್ಕಿ","Wheat":"ಗೋಧಿ","Maize":"ಮಕ್ಕಜೋಳ","Pulses":"ದಾಳೆಗಳು","Vegetables":"ತರಕಾರಿಗಳು",
+        "Fruits":"ಹಣ್ಣುಗಳು","Potato":"ಅಲೂಗಡ್ಡೆ","Banana":"ಬಾಳೆಹಣ್ಣು","Sugarcane":"ಕರಿಬೇವು",
+        "Groundnut":"ಶೇಂಗಾ","Sunflower":"ಸೂರ್ಯಕಾಂತಿ","Coconut":"ತೆಂಗು","Cashew":"ಕಾಜು",
+        "Tea":"ಚಹಾ","Coffee":"ಕಾಫಿ","Cotton":"ಹತ್ತಿ","Soybean":"ಸೋಯಾಬೀನ್","Tobacco":"ಟೊಬಾಕೊ",
+        "Citrus":"ಸಿಟ್ರಸ್","Millets":"ಸಜ್ಜೆ","Bajra":"ಬಜ್ರಾ","Dates":"ಖರ್ಜೂರ","Guar":"ಗುವಾರ್",
+        "Ginger":"ಶುಂಠಿ","Cardamom":"ಏಲಕ್ಕಿ","Walnut":"ಒಲೆ","Herbs":"ಔಷಧೀಯ ಸಸ್ಯಗಳು","Flowers":"ಹೂಗಳು",
+        "Spices":"ಮಸಾಲೆಗಳು","Sesame":"ಎಳ್ಳು"
+      });
+      return lookup;
+    })();
+
+    // --- helpers ---
+    function populateSoilOptions(lang) {
+      const sel = document.getElementById('soilSelect');
+      sel.innerHTML = '';
+      const display = translations[lang].soils_display;
+      const enValues = translations.en.soils_display; // parallel values (kept as English values)
+      for (let i = 0; i < display.length; i++) {
+        const opt = document.createElement('option');
+        opt.value = enValues[i] || "";   // English value for backend
+        opt.textContent = display[i];
+        sel.appendChild(opt);
+      }
+      // If server provided a selected soil (serverData.result), set it as selected
+      if (serverData.result) {
+        // find option with value matching serverData.result
+        for (let i = 0; i < sel.options.length; i++) {
+          if (sel.options[i].value === serverData.result) {
+            sel.selectedIndex = i;
+            break;
+          }
+        }
+      } else {
+        sel.selectedIndex = 0;
+      }
+    }
+
+    function translateCrop(enCrop, lang) {
+      if (lang === 'en') return enCrop;
+      return cropLookup[enCrop] || enCrop;
+    }
+
+    function renderCrops(lang) {
+      const ul = document.getElementById('crop_list');
+      const predLabel = document.getElementById('predicted_label');
+      const predSpan = document.getElementById('predicted_soil');
+      const suitLabel = document.getElementById('suitable_label');
+
+      ul.innerHTML = '';
+
+      // Determine crop list to show
+      let list = [];
+      if (Array.isArray(serverData.crops) && serverData.crops.length > 0) {
+        // use server-provided list (assumed English). Translate each item if needed.
+        list = serverData.crops.map(c => (lang === 'en' ? c : translateCrop(c, lang)));
+      } else if (serverData.result) {
+        // use built-in list for the soil
+        const soilKey = serverData.result;
+        const built = translations[lang].crops_by_soil[soilKey] || translations.en.crops_by_soil[soilKey] || [];
+        list = built.slice();
+      } else {
+        list = [];
+      }
+
+      // Render predicted soil label
+      if (serverData.result) {
+        predLabel.style.display = '';
+        predSpan.textContent = (lang === 'en') ? serverData.result : ( // translate soil display if possible
+          // find index of serverData.result in en list then use kn display
+          (() => {
+            const enList = translations.en.soils_display;
+            const idx = enList.indexOf(serverData.result);
+            return (idx >= 0) ? translations.kn.soils_display[idx] : serverData.result;
+          })()
+        );
+      } else {
+        predLabel.style.display = 'none';
+      }
+
+      // Render crops
+      if (list.length === 0) {
+        suitLabel.style.display = 'none';
+      } else {
+        suitLabel.style.display = '';
+        for (const item of list) {
+          const li = document.createElement('li');
+          li.textContent = item;
+          ul.appendChild(li);
+        }
+      }
+    }
+
+    function applyUIText(lang) {
+      const t = translations[lang];
+      document.getElementById('title').innerText = t.title;
+      document.getElementById('desc').innerText = t.desc;
+      document.getElementById('soil_label').innerText = t.soil_label;
+      document.getElementById('show_crops_btn').innerText = t.show_crops_btn;
+      document.getElementById('back_btn').innerText = t.back_btn;
+      // predicted_label text node (keep space)
+      document.getElementById('predicted_label').firstChild && (document.getElementById('predicted_label').firstChild.nodeValue = t.predicted_label + " ");
+      document.getElementById('suitable_label').innerText = t.suitable_label;
+    }
+
+    // --- wire language select ---
+    const langSelect = document.getElementById('languageSelect');
+    langSelect.addEventListener('change', () => {
+      const lang = langSelect.value;
+      document.getElementById('lang_hidden').value = lang;
+      populateSoilOptions(lang);
+      applyUIText(lang);
+      renderCrops(lang);
+    });
+
+    // init on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const defaultLang = langSelect.value || 'en';
+      document.getElementById('lang_hidden').value = defaultLang;
+      populateSoilOptions(defaultLang);
+      applyUIText(defaultLang);
+      renderCrops(defaultLang);
+    });
+  </script>
+</body>
+</html>
