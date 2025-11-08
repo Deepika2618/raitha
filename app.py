@@ -76,6 +76,7 @@ def register():
 def login():
     return render_template("login.html")
 
+
 @app.route("/home")
 def home():
     return render_template("home.html")
@@ -221,6 +222,23 @@ def api_favorites():
             favs.remove(crop_id)
             save_favs(favs)
         return jsonify(favs)
+    
+
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        username = request.form.get("username")
+        new_password = request.form.get("new_password")
+
+        # (optional) Later add logic to update password in your database
+        print(f"Password reset for user: {username}, new password: {new_password}")
+
+        return (
+            "<h3 style='text-align:center;color:green;'>✅ Password successfully updated!</h3>"
+            "<br><a href='/login'>Back to Login</a>"
+        )
+    return render_template("forgot_password.html")
+
 
 # 🌾 ML Prediction API (with confidence 50-85%)
 @app.route("/api/predict_crop", methods=["POST"])
@@ -232,6 +250,8 @@ def predict_crop():
     description = data.get("description", "").strip()
     if not description:
         return jsonify({"error": "No description provided"}), 400
+    
+
 
     cleaned = clean_text(description)
     prediction = model.predict([cleaned])[0]

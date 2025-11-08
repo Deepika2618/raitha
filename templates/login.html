@@ -8,7 +8,7 @@
     body {
       margin: 0;
       font-family: Poppins, Arial, sans-serif;
-      background: url("https://t3.ftcdn.net/jpg/04/32/15/18/360_F_432151892_oQ3YQDo2LYZPILlEMnlo55PjjgiUwnQb.jpg") no-repeat center center fixed;
+      background: url("https://www.nutritionfact.in/wp-content/uploads/2022/06/Autotrophic-n-hetrotrophic.jpg") no-repeat center center fixed;
       background-size: cover;
       min-height: 100vh;
       display: flex;
@@ -17,7 +17,7 @@
       padding: 40px;
     }
     .card {
-      background:(255, 255, 255, 0.9);
+      background: (255, 255, 255, 0.9);
       backdrop-filter: blur(6px);
       padding: 32px;
       border-radius: 20px;
@@ -41,12 +41,16 @@
       color: #065f46;
       font-weight: 600;
     }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
     input {
-      width: 100%;
+      flex: 1;
       padding: 12px;
       border: 1px solid #94a3b8;
       border-radius: 10px;
-      margin-bottom: 14px;
       font-size: 0.95rem;
     }
     button {
@@ -66,6 +70,18 @@
       transform: translateY(-2px);
       box-shadow: 0 6px 18px rgba(22,163,74,0.4);
     }
+    .voice-btn {
+      background: #22c55e;
+      border: none;
+      color: white;
+      font-size: 18px;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .voice-btn:hover { background: #15803d; }
     .muted {
       text-align: center;
       margin-top: 14px;
@@ -73,6 +89,12 @@
     }
     a { color: #2563eb; font-weight: 600; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .forgot {
+      display: block;
+      text-align: right;
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
   </style>
 </head>
 <body>
@@ -81,10 +103,19 @@
 
     <form onsubmit="return handleLogin(event)">
       <label for="log_user" id="lbl_user">Username</label>
-      <input id="log_user" type="text" onfocus="speakKey('enter_username')" required/>
+      <div class="input-group">
+        <input id="log_user" type="text" onfocus="speakKey('enter_username')" required/>
+        <button type="button" class="voice-btn" onclick="startVoiceInput('log_user')">🎙️</button>
+      </div>
 
       <label for="log_pass" id="lbl_pass">Password</label>
-      <input id="log_pass" type="password" onfocus="speakKey('enter_password')" required/>
+      <div class="input-group">
+        <input id="log_pass" type="password" onfocus="speakKey('enter_password')" required/>
+        <button type="button" class="voice-btn" onclick="startVoiceInput('log_pass')">🎙️</button>
+      </div>
+
+      <!-- ✅ Forgot Password link added here -->
+      <a href="/forgot-password" class="forgot">Forgot Password?</a>
 
       <button type="submit" id="btn_login">Login</button>
     </form>
@@ -131,6 +162,25 @@
       const u = new SpeechSynthesisUtterance(msg);
       u.lang = currentLang==="hi"?"hi-IN":currentLang==="kn"?"kn-IN":currentLang==="bn"?"bn-IN":"en-US";
       speechSynthesis.speak(u);
+    }
+
+    function startVoiceInput(fieldId){
+      const input = document.getElementById(fieldId);
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SpeechRecognition){ alert("Speech recognition not supported in this browser"); return; }
+
+      const recog = new SpeechRecognition();
+      recog.lang = currentLang==="hi"?"hi-IN":currentLang==="kn"?"kn-IN":currentLang==="bn"?"bn-IN":"en-US";
+      recog.start();
+
+      recog.onresult = function(e){
+        const text = e.results[0][0].transcript;
+        input.value = text;
+      };
+
+      recog.onerror = function(){
+        alert("Could not recognize speech. Please try again.");
+      };
     }
 
     function handleLogin(e){

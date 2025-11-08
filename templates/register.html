@@ -40,7 +40,7 @@
       padding: 40px;
     }
     .card {
-      background: (255, 255, 255, 0.92);
+      background: rgba(255,255,255,0.92);
       padding: 28px 26px;
       border-radius: 16px;
       box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
@@ -51,23 +51,37 @@
       from { transform: translateX(100%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
-    h2 {
-      margin: 0 0 16px 0;
-      color: #065f46;
-      text-align: center;
-    }
     label {
       display: block;
       margin: 10px 0 6px;
       color: #065f46;
       font-weight: 600;
     }
-    input {
-      width: 100%;
+    input, select {
       padding: 10px 12px;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
       font-size: 14px;
+    }
+    .error {
+      color: red;
+      font-size: 13px;
+      margin-top: 4px;
+      display: none;
+    }
+    .voice-btn {
+      width: 18%;
+      padding: 10px;
+      margin-left: 5px;
+      border: none;
+      border-radius: 10px;
+      background: #22c55e;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .voice-btn:hover {
+      background: #16a34a;
     }
     button {
       width: 100%;
@@ -90,17 +104,26 @@
       margin-top: 12px;
       color: #475569;
     }
-    a {
-      color: #2563eb;
-      text-decoration: none;
-      font-weight: 600;
+    .showpass {
+      font-size: 13px;
+      margin-left: 8px;
+      cursor: pointer;
     }
-    a:hover { text-decoration: underline; }
+    .phone-container {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    select#country_code {
+      width: 35%;
+    }
+    input#reg_phone {
+      width: 45%;
+    }
   </style>
 </head>
 <body>
 
-  <!-- Language Selector -->
   <select class="lang-select" onchange="switchLanguage(this.value)">
     <option value="en">English</option>
     <option value="hi">हिन्दी</option>
@@ -113,24 +136,48 @@
   <div class="container">
     <div class="card">
       <h2 id="register_title">Create Account</h2>
-      <form onsubmit="return handleRegister(event)">
-        <label for="reg_user" id="lbl_user">Username</label>
-        <input id="reg_user" type="text" onfocus="speakKey('enter_username')" required/>
 
-        <label for="reg_email" id="lbl_email">Email</label>
-        <input id="reg_email" type="email" onfocus="speakKey('enter_email')" required/>
+      <form onsubmit="return handleRegister(event)" autocomplete="off">
+        <label id="lbl_user">Username</label>
+        <div style="display:flex;align-items:center;">
+          <input id="reg_user" type="text" onfocus="speakKey('enter_username')" required/>
+          <button type="button" class="voice-btn" onclick="startListening('reg_user')">🎤</button>
+        </div>
 
-        <label for="reg_phone" id="lbl_phone">Phone Number</label>
-        <input id="reg_phone" type="tel" onfocus="speakKey('enter_phone')" required/>
+        <label id="lbl_phone">Phone Number</label>
+        <div class="phone-container">
+          <select id="country_code">
+            <option value="+91"> +91 (India)</option>
+            <option value="+44"> +44 (UK)</option>
+            <option value="+1"> +1 (USA)</option>
+            <option value="+61"> +61 (Australia)</option>
+            <option value="+81"> +81 (Japan)</option>
+            <option value="+971"> +971 (UAE)</option>
+          </select>
+          <input 
+            id="reg_phone" 
+            type="tel" 
+            onfocus="speakKey('enter_phone')" 
+            maxlength="12"
+            placeholder="Enter number (digits only)"
+            required
+          />
+          <button type="button" class="voice-btn" onclick="startListening('reg_phone')">🎤</button>
+        </div>
+        <p id="phone_error" class="error">⚠️ Please enter a valid phone number (10 digits, starts 6–9 for India).</p>
 
-        <label for="reg_pass" id="lbl_pass">Password</label>
-        <input id="reg_pass" type="password" onfocus="speakKey('enter_password')" required/>
-
-        <label for="reg_cpass" id="lbl_cpass">Confirm Password</label>
-        <input id="reg_cpass" type="password" onfocus="speakKey('enter_cpassword')" required/>
+        <label id="lbl_pass">Password</label>
+        <div style="display:flex;align-items:center;">
+          <input id="reg_pass" type="password" onfocus="speakKey('enter_password')" required/>
+          <button type="button" class="voice-btn" onclick="startListening('reg_pass')">🎤</button>
+        </div>
+        <div class="showpass">
+          <input type="checkbox" id="show_password" onclick="togglePassword()"> Show Password
+        </div>
 
         <button type="submit" id="btn_register">Register</button>
       </form>
+
       <p class="muted">
         <span id="have_account">Already have an account?</span>
         <a href="login.html" id="login_link">Login</a>
@@ -139,62 +186,30 @@
   </div>
 
   <script>
-    // 🌍 Translations
     const t = {
-      en: {
-        register_title:"Create Account", username:"Username", email:"Email",
-        phone:"Phone Number", password:"Password", confirm_password:"Confirm Password",
-        register_btn:"Register",
-        enter_username:"Enter your username", enter_email:"Enter your email",
-        enter_phone:"Enter your phone number", enter_password:"Enter your password",
-        enter_cpassword:"Confirm your password",
-        register_success:"Registration successful",
-        register_fail:"Please fill all fields correctly",
-        invalid_phone:"Please enter a valid 10-digit phone number.",
-        invalid_email:"Please enter a valid Gmail address.",
-        user_exists:"Username already exists",
-        have_account:"Already have an account?",
-        login_link:"Login"
-      },
-      hi: {
-        register_title:"खाता बनाएँ", username:"उपयोगकर्ता नाम", email:"ईमेल", phone:"फ़ोन नंबर",
-        password:"पासवर्ड", confirm_password:"पासवर्ड की पुष्टि करें", register_btn:"रजिस्टर करें",
-        enter_username:"अपना उपयोगकर्ता नाम दर्ज करें", enter_email:"अपना ईमेल दर्ज करें",
-        enter_phone:"अपना फ़ोन नंबर दर्ज करें", enter_password:"अपना पासवर्ड दर्ज करें",
-        enter_cpassword:"अपना पासवर्ड पुष्टि करें",
-        register_success:"पंजीकरण सफल हुआ", register_fail:"सभी फ़ील्ड सही ढंग से भरें",
-        invalid_phone:"कृपया सही 10-अंकों का फ़ोन नंबर दर्ज करें।",
-        invalid_email:"कृपया मान्य Gmail पता दर्ज करें।",
-        user_exists:"उपयोगकर्ता नाम पहले से मौजूद है",
-        have_account:"पहले से एक खाता है?",
-        login_link:"लॉगिन"
-      },
-      kn: {
-        register_title:"ಖಾತೆ ಸೃಷ್ಟಿಸಿ", username:"ಬಳಕೆದಾರರ ಹೆಸರು", email:"ಇಮೇಲ್", phone:"ಫೋನ್ ಸಂಖ್ಯೆ",
-        password:"ಪಾಸ್ವರ್ಡ್", confirm_password:"ಪಾಸ್ವರ್ಡ್ ದೃಢೀಕರಿಸಿ", register_btn:"ನೋಂದಣಿ",
-        enter_username:"ನಿಮ್ಮ ಬಳಕೆದಾರರ ಹೆಸರನ್ನು ನಮೂದಿಸಿ", enter_email:"ನಿಮ್ಮ ಇಮೇಲ್ ನಮೂದಿಸಿ",
-        enter_phone:"ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ", enter_password:"ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ",
-        enter_cpassword:"ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ದೃಢೀಕರಿಸಿ",
-        register_success:"ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಯಿತು", register_fail:"ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಸರಿಯಾಗಿ ತುಂಬಿ",
-        invalid_phone:"ದಯವಿಟ್ಟು 10 ಅಂಕೆಗಳ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ.",
-        invalid_email:"ದಯವಿಟ್ಟು ಮಾನ್ಯ Gmail ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ.",
-        user_exists:"ಬಳಕೆದಾರ ಹೆಸರು ಈಗಾಗಲೇ ಅಸ್ತಿತ್ವದಲ್ಲಿದೆ",
-        have_account:"ಈಗಾಗಲೇ ಖಾತೆ ಇದೆಯೇ?",
-        login_link:"ಲಾಗಿನ್"
-      },
-      bn: {
-        register_title:"অ্যাকাউন্ট তৈরি করুন", username:"ব্যবহারকারীর নাম", email:"ইমেল", phone:"ফোন নম্বর",
-        password:"পাসওয়ার্ড", confirm_password:"পাসওয়ার্ড নিশ্চিত করুন", register_btn:"নিবন্ধন",
-        enter_username:"আপনার ব্যবহারকারীর নাম লিখুন", enter_email:"আপনার ইমেল লিখুন",
-        enter_phone:"আপনার ফোন নম্বর লিখুন", enter_password:"আপনার পাসওয়ার্ড লিখুন",
-        enter_cpassword:"আপনার পাসওয়ার্ড নিশ্চিত করুন",
-        register_success:"নিবন্ধন সফল হয়েছে", register_fail:"সব ক্ষেত্র সঠিকভাবে পূরণ করুন",
-        invalid_phone:"দয়া করে সঠিক 10-অঙ্কের ফোন নম্বর লিখুন।",
-        invalid_email:"দয়া করে বৈধ Gmail ঠিকানা লিখুন।",
-        user_exists:"ব্যবহারকারীর নাম ইতিমধ্যেই বিদ্যমান",
-        have_account:"ইতিমধ্যেই একটি অ্যাকাউন্ট আছে?",
-        login_link:"লগইন"
-      }
+      en:{register_title:"Create Account",username:"Username",phone:"Phone Number",password:"Password",
+          register_btn:"Register",enter_username:"Enter your username",enter_phone:"Enter your phone number",
+          enter_password:"Enter your password",register_success:"Registration successful",
+          register_fail:"Please fill all fields correctly",invalid_phone:"Please enter a valid phone number.",
+          have_account:"Already have an account?",login_link:"Login"},
+      hi:{register_title:"खाता बनाएँ",username:"उपयोगकर्ता नाम",phone:"फ़ोन नंबर",password:"पासवर्ड",
+          register_btn:"रजिस्टर करें",enter_username:"अपना उपयोगकर्ता नाम दर्ज करें",
+          enter_phone:"अपना फ़ोन नंबर दर्ज करें",enter_password:"अपना पासवर्ड दर्ज करें",
+          register_success:"पंजीकरण सफल हुआ",register_fail:"सभी फ़ील्ड सही ढंग से भरें",
+          invalid_phone:"कृपया सही फ़ोन नंबर दर्ज करें।",have_account:"पहले से एक खाता है?",
+          login_link:"लॉगिन"},
+      kn:{register_title:"ಖಾತೆ ಸೃಷ್ಟಿಸಿ",username:"ಬಳಕೆದಾರರ ಹೆಸರು",phone:"ಫೋನ್ ಸಂಖ್ಯೆ",password:"ಪಾಸ್ವರ್ಡ್",
+          register_btn:"ನೋಂದಣಿ",enter_username:"ನಿಮ್ಮ ಬಳಕೆದಾರರ ಹೆಸರನ್ನು ನಮೂದಿಸಿ",
+          enter_phone:"ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",enter_password:"ನಿಮ್ಮ ಪಾಸ್ವರ್ಡ್ ನಮೂದಿಸಿ",
+          register_success:"ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಯಿತು",register_fail:"ದಯವಿಟ್ಟು ಎಲ್ಲಾ ಕ್ಷೇತ್ರಗಳನ್ನು ಸರಿಯಾಗಿ ತುಂಬಿ",
+          invalid_phone:"ದಯವಿಟ್ಟು ಸರಿಯಾದ ಫೋನ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ.",have_account:"ಈಗಾಗಲೇ ಖಾತೆ ಇದೆಯೇ?",
+          login_link:"ಲಾಗಿನ್"},
+      bn:{register_title:"অ্যাকাউন্ট তৈরি করুন",username:"ব্যবহারকারীর নাম",phone:"ফোন নম্বর",
+          password:"পাসওয়ার্ড",register_btn:"নিবন্ধন",enter_username:"আপনার ব্যবহারকারীর নাম লিখুন",
+          enter_phone:"আপনার ফোন নম্বর লিখুন",enter_password:"আপনার পাসওয়ার্ড লিখুন",
+          register_success:"নিবন্ধন সফল হয়েছে",register_fail:"সব ক্ষেত্র সঠিকভাবে পূরণ করুন",
+          invalid_phone:"দয়া করে সঠিক ফোন নম্বর লিখুন।",have_account:"ইতিমধ্যেই একটি অ্যাকাউন্ট আছে?",
+          login_link:"লগইন"}
     };
 
     let currentLang = localStorage.getItem("rb_lang") || "en";
@@ -205,23 +220,15 @@
       const dict = t[l];
       document.getElementById("register_title").innerText = dict.register_title;
       document.getElementById("lbl_user").innerText = dict.username;
-      document.getElementById("lbl_email").innerText = dict.email;
       document.getElementById("lbl_phone").innerText = dict.phone;
       document.getElementById("lbl_pass").innerText = dict.password;
-      document.getElementById("lbl_cpass").innerText = dict.confirm_password;
       document.getElementById("btn_register").innerText = dict.register_btn;
       document.getElementById("have_account").innerText = dict.have_account;
       document.getElementById("login_link").innerText = dict.login_link;
     }
 
-    function switchLanguage(lang){
-      setLang(lang);
-    }
-
-    function speakKey(k){
-      speak(t[currentLang][k]);
-    }
-
+    function switchLanguage(lang){ setLang(lang); }
+    function speakKey(k){ speak(t[currentLang][k]); }
     function speak(msg){
       if(!msg) return;
       const u = new SpeechSynthesisUtterance(msg);
@@ -229,54 +236,118 @@
       speechSynthesis.speak(u);
     }
 
+    function startListening(inputId){
+      if(!('webkitSpeechRecognition' in window)){
+        alert("Speech recognition not supported in this browser.");
+        return;
+      }
+      const recognition = new webkitSpeechRecognition();
+      recognition.lang = currentLang==="hi"?"hi-IN":currentLang==="kn"?"kn-IN":currentLang==="bn"?"bn-IN":"en-US";
+      recognition.start();
+      recognition.onresult = function(event){
+        const result = event.results[0][0].transcript;
+        document.getElementById(inputId).value = result;
+      };
+    }
+
     function handleRegister(e){
       e.preventDefault();
+
       const u = document.getElementById('reg_user').value.trim();
-      const em = document.getElementById('reg_email').value.trim();
+      const cc = document.getElementById('country_code').value;
       const ph = document.getElementById('reg_phone').value.trim();
       const p = document.getElementById('reg_pass').value;
-      const cp = document.getElementById('reg_cpass').value;
+      const phoneError = document.getElementById('phone_error');
+      phoneError.style.display = "none";
 
-      if(!u || !em || !ph || !p || p!==cp){
+      if(!u || !ph || !p){
         speakKey('register_fail');
         alert(t[currentLang].register_fail);
         return false;
       }
 
-      if(!/^\d{10}$/.test(ph)){
-        speakKey('invalid_phone');
-        alert(t[currentLang].invalid_phone);
+      // keep India-style validation as before: 10 digits starting with 6-9
+      if(!/^[6-9]\d{9}$/.test(ph)){
+        phoneError.style.display = "block";
+        phoneError.innerText = "⚠️ " + "Number does not exist. Enter a valid 10-digit number .";
+        speak("Number does not exist. Enter a valid phone number .");
         return false;
       }
 
-      if(!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(em)){
-        speakKey('invalid_email');
-        alert(t[currentLang].invalid_email);
+      const fullPhone = cc + ph;
+
+      // Robust parsing & normalization of stored users
+      let usersRaw = localStorage.getItem('rb_users');
+      let users = [];
+      if(usersRaw){
+        try {
+          const parsed = JSON.parse(usersRaw);
+          if(Array.isArray(parsed)){
+            // normalize each item to object {u, ph, p}
+            users = parsed.map(item => {
+              if(!item) return {u:'', ph:'', p:''};
+              if(typeof item === 'string') return {u: item, ph:'', p:''};
+              if(typeof item === 'object'){
+                return {
+                  u: item.u ? String(item.u) : '',
+                  ph: item.ph ? String(item.ph) : '',
+                  p: item.p ? String(item.p) : ''
+                };
+              }
+              return {u:'', ph:'', p:''};
+            });
+          } else {
+            // not an array -> clear it and start fresh
+            users = [];
+            localStorage.removeItem('rb_users');
+          }
+        } catch(err){
+          // corrupted JSON - clear and start empty
+          users = [];
+          localStorage.removeItem('rb_users');
+        }
+      }
+
+      // check duplicate username (case-insensitive) and duplicate phone (exact)
+      const usernameExists = users.some(x => {
+        if(!x.u) return false;
+        return x.u.toLowerCase() === u.toLowerCase();
+      });
+      if(usernameExists){
+        alert("Username already exists! Try another one.");
+        return false;
+      }
+      const phoneExists = users.some(x => (x.ph || '') === fullPhone);
+      if(phoneExists){
+        alert("Phone number already registered!");
         return false;
       }
 
-      const users = JSON.parse(localStorage.getItem('rb_users')||'[]');
-      if(users.find(x=>x.u===u)){
-        speakKey('user_exists');
-        alert(t[currentLang].user_exists);
-        return false;
-      }
-
-      users.push({u, em, ph, p});
+      // push new normalized object
+      users.push({u: u, ph: fullPhone, p: p});
       localStorage.setItem('rb_users', JSON.stringify(users));
 
       speakKey('register_success');
       alert(t[currentLang].register_success);
-      setTimeout(()=>location.href='login.html', 1000);
+
+      // redirect to login page
+      window.location.href = 'login.html';
       return false;
     }
 
-    window.addEventListener("DOMContentLoaded", ()=>{
+    function togglePassword(){
+      const pass = document.getElementById('reg_pass');
+      pass.type = pass.type === "password" ? "text" : "password";
+    }
+
+    // digit-only enforcement for phone field and init language
+    document.addEventListener("DOMContentLoaded", ()=>{
+      const phone = document.getElementById("reg_phone");
+      phone.addEventListener("input", ()=> phone.value = phone.value.replace(/[^0-9]/g, ""));
       document.querySelector(".lang-select").value = currentLang;
       setLang(currentLang);
-      speak("Welcome to Raitha Bandhu. Please register first.");
+      speak("Welcome to Raitha Bandhu. ");
     });
   </script>
-
 </body>
 </html>
